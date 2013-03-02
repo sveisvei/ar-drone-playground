@@ -15,6 +15,7 @@
   "readmeFilename": "README.md",
   "gitHead": "9c175e51a14a880dc851ca58d095d98e5d98b7a2",
   "dependencies": {
-    "ar-drone": "0.0.5"
+    "ar-drone": "0.0.5",
+    "opencv": "0.0.11"
   }
 }
