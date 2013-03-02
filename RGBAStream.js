@@ -33,18 +33,21 @@ function RGBAStream() {
     // Just append the videodata to exising buffer
     self._buf = Buffer.concat([self._buf, buffer]);
     if (self._buf.length > nrOfBytesPrImage) {
-      var buf = self._buf;
-      var rgba = self.rgba;
-      var i;
-      for (i = 0; i < nrOfBytesPrImage-3; i+=4) {
-        rgba[i] = buf[i];
-        rgba[i+1] = buf[i+1];
-        rgba[i+2] = buf[i+2];
-      }
-      // Emit the parsed data
-      self.emit('data', rgba);
-      // Remove the parsed data from the buffer
+      var buf = self._buf.slice(0, nrOfBytesPrImage);
       self._buf = self._buf.slice(nrOfBytesPrImage);
+      self.emit('data', buf);
+      // var buf = self._buf;
+      // var rgba = self.rgba;
+      // var i;
+      // for (i = 0; i < nrOfBytesPrImage-3; i+=4) {
+      //   rgba[i] = buf[i];
+      //   rgba[i+1] = buf[i+1];
+      //   rgba[i+2] = buf[i+2];
+      // }
+      // // Emit the parsed data
+      // self.emit('data', rgba);
+      // // Remove the parsed data from the buffer
+      // self._buf = self._buf.slice(nrOfBytesPrImage);
     };
   });
 };

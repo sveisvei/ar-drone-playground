@@ -4,6 +4,7 @@ var arDrone = require('ar-drone')
   , PaVEParser = require('./node_modules/ar-drone/lib/video/PaVEParser')
   , util = require('util')
   , net = require('net')
+  , fs = require('fs')
   , Stream = require('stream').Stream
   , parser = new PaVEParser()
   , RGBA = new RGBAStream();
@@ -16,8 +17,14 @@ function FeatureParser() {
 
 util.inherits(FeatureParser, Stream);
 
+var firstImage = true;
 FeatureParser.prototype.write = function(buf) {
-  console.log(1);
+  if (firstImage) {
+    firstImage = false;
+    fs.writeFile('test.rgba', buf, function() {
+      console.log('Wrote image');
+    });
+  }
 };
 
 var client = arDrone.createClient();
