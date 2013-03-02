@@ -1,16 +1,20 @@
 {
-  "name": "ar",
+  "name": "ar-drone-playground",
   "version": "0.0.0",
-  "description": "ERROR: No README.md file found!",
+  "description": "ar-drone-playground ===================",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sveisvei/ar-drone-playground.git"
+  },
   "author": "",
   "license": "BSD",
+  "readmeFilename": "README.md",
+  "gitHead": "9c175e51a14a880dc851ca58d095d98e5d98b7a2",
   "dependencies": {
-    "ar-drone": "latest",
-    "jsfeat": "latest"
+    "ar-drone": "0.0.5"
   }
 }
