@@ -1,7 +1,6 @@
 extends layout
 
 block content
-  script(src='jq.js')
   script
     $(function() {
       var host = window.document.location.host.replace(/:.*/, '');
@@ -39,9 +38,10 @@ block content
         send(message);
       });
     });
-  input(type="button", data-command="takeoff", value="Takeoff")
-  input(type="button", data-command="land", value="Land")
-  input(type="button", data-command="calibrate", value="Calibrate heading")
-  //- input(type="text", name="target-heading", value="0")
-  //- input(type="button", data-command="heading", data-argument="target-heading", value="Set heading")
+  .well
+    input.btn.btn-large(type="button", data-command="takeoff", value="Takeoff")
+    input.btn.btn-large(type="button", data-command="land", value="Land")
+    input.btn.btn-large(type="button", data-command="calibrate", value="Calibrate heading")
+    //- input(type="text", name="target-heading", value="0")
+    //- input(type="button", data-command="heading", data-argument="target-heading", value="Set heading")
   pre.log(style="width: 100%; height: 400px; font-size: 10pt;")
