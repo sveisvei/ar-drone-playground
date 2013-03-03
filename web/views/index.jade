@@ -19,6 +19,15 @@ block content
         }
       };
 
+      window.addEventListener('deviceorientation', function(event) {
+        send({
+          type: 'orientation',
+          alpha: event.alpha,
+          beta: event.beta,
+          gamma: event.gamma
+        });
+      }, false);
+
       $('input[data-command]').bind('click', function() {
         var $this = $(this);
         var command = $this.attr('data-command');
@@ -26,15 +35,13 @@ block content
           type: command
         };
         var argument = $this.attr('data-argument');
-        if (argument) {
-          message.argument = $('input[name="' + argument + '"]').val();
-        }
-        console.log(message);
+        if (argument) message.argument = $('input[name="' + argument + '"]').val();
         send(message);
       });
     });
   input(type="button", data-command="takeoff", value="Takeoff")
   input(type="button", data-command="land", value="Land")
-  input(type="text", name="target-heading", value="0")
-  input(type="button", data-command="heading", data-argument="target-heading", value="Set heading")
+  input(type="button", data-command="calibrate", value="Calibrate heading")
+  //- input(type="text", name="target-heading", value="0")
+  //- input(type="button", data-command="heading", data-argument="target-heading", value="Set heading")
   pre.log(style="width: 100%; height: 400px; font-size: 10pt;")

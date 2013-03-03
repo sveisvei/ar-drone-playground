@@ -11,8 +11,19 @@ function normalizeHeading(heading) {
   return heading;
 }
 
+// updates heading to be between -180 and 180
+function clampHeading(heading) {
+  heading = heading % 360;
+  return heading > 180 ? -(360 - heading) : heading;
+}
+
+// interpolates direction
 function ease(oldValue, newValue) {
-  return oldValue * .8 + newValue * .2;
+  return oldValue * 0 + newValue * 1;
+}
+
+function roundTwo(val) {
+  return Math.round(val * 100) / 100;
 }
 
 var app = express();
@@ -59,16 +70,16 @@ wss.on('connection', function(ws) {
   var lastControllerHeading = 0;
   var headingDifference = 0;
 
-  var client = arDrone.createClient();
-  client.config('general:navdata_demo', 'FALSE');
-  client.on('navdata', function(navdata) {
-    if (navdata && navdata.magneto) {
-      lastDroneHeading = ease(lastDroneHeading, normalizeHeading(navdata.magneto.heading.unwrapped));
-    }
-  });
+  // var client = arDrone.createClient();
+  // client.config('general:navdata_demo', 'FALSE');
+  // client.on('navdata', function(navdata) {
+  //   if (navdata && navdata.magneto) {
+  //     lastDroneHeading = ease(lastDroneHeading, normalizeHeading(roundTwo(navdata.magneto.heading.unwrapped)));
+  //   }
+  // });
 
   ws.on('close', function() {
-    client.land();
+    // client.land();
     clearInterval(headingUpdateInterval);
   });
 
@@ -78,25 +89,24 @@ wss.on('connection', function(ws) {
     // current heading.
     // so if the calibration compensated controller heading is 60, and drone heading 50, then
     // 60 - 50 = 10, which indicates 10 degrees of clockwise movement.
-    var degreesToTurn = ((lastControllerHeading + headingDifference) - lastDroneHeading) % 360;
-    if (degreesToTurn < -180) degreesToTurn += 360;
-    else if (degreesToTurn > 180) degreesToTurn = degreesToTurn - 360;
+    var degreesToTurn = roundTwo(clampHeading((lastControllerHeading + headingDifference) - lastDroneHeading));
     logToClient({heading: lastDroneHeading, controllerHeading: lastControllerHeading, degreesToTurn: degreesToTurn});
-    if (!syncedOnce) return; // don't rotate unless we've synced once
-    if (Math.abs(degreesToTurn) < 2) {
-      client.clockwise(0);
-      return;
-    }
-    var speed = Math.round(100 * Math.min(maxTurnSpeed, Math.max(minTurnSpeed, (Math.abs(diff) / maxTurnSpeedThreshold) * maxTurnSpeed))) / 100;
-    if (diff > 0) client.clockwise(speed);
-    else client.counterClockwise(speed);
+    // if (!syncedOnce) return; // don't rotate unless we've synced once
+    // if (Math.abs(degreesToTurn) < 2) {
+    //   client.clockwise(0);
+    //   return;
+    // }
+    // var speed = Math.round(100 * Math.min(maxTurnSpeed, Math.max(minTurnSpeed, (Math.abs(diff) / maxTurnSpeedThreshold) * maxTurnSpeed))) / 100;
+    // if (diff > 0) client.clockwise(speed);
+    // else client.counterClockwise(speed);
   }, turnIntervalFrequency);
 
   // handle client commands
   ws.on('message', function(message) {
     var data = JSON.parse(message);
     if (data.type == 'orientation') {
-      lastControllerHeading = ease(lastControllerHeading, normalizeHeading(data.alpha));
+      var heading = roundTwo(360 - data.alpha);
+      lastControllerHeading = ease(lastControllerHeading, normalizeHeading(heading));
       // if (data.beta < 0) {
       //   var amount = -1*data.beta / 90;
       //   client.back(0);
