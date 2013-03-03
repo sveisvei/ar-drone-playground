@@ -1,0 +1,40 @@
+extends layout
+
+block content
+  script(src='jq.js')
+  script
+    $(function() {
+      var host = window.document.location.host.replace(/:.*/, '');
+      var ws = new WebSocket('ws://' + host + ':3000');
+
+      function send(data) {
+        ws.send(JSON.stringify(data));
+      }
+
+      ws.onopen = function() {};
+      ws.onmessage = function(event) {
+        var data = JSON.parse(event.data);
+        if (data.type == 'log') {
+          $('pre.log').text(JSON.stringify(data.data, null, 2));
+        }
+      };
+
+      $('input[data-command]').bind('click', function() {
+        var $this = $(this);
+        var command = $this.attr('data-command');
+        var message = {
+          type: command
+        };
+        var argument = $this.attr('data-argument');
+        if (argument) {
+          message.argument = $('input[name="' + argument + '"]').val();
+        }
+        console.log(message);
+        send(message);
+      });
+    });
+  input(type="button", data-command="takeoff", value="Takeoff")
+  input(type="button", data-command="land", value="Land")
+  input(type="text", name="target-heading", value="0")
+  input(type="button", data-command="heading", data-argument="target-heading", value="Set heading")
+  pre.log(style="width: 100%; height: 400px; font-size: 10pt;")

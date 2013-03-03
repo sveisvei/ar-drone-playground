@@ -7,7 +7,8 @@ var arDrone = require('ar-drone')
   , fs = require('fs')
   , Stream = require('stream').Stream
   , parser = new PaVEParser()
-  , RGBA = new RGBAStream();
+  , RGBA = new RGBAStream()
+  , cv = require('opencv');
 
 function FeatureParser() {
   Stream.call(this);
@@ -21,20 +22,28 @@ var firstImage = true;
 FeatureParser.prototype.write = function(buf) {
   if (firstImage) {
     firstImage = false;
-    fs.writeFile('test.rgba', buf, function() {
+    // fs.writeFile('test.rgba', buf, function() {
+    //   console.log('Wrote image');
+    // });
+    cv.readImage(buf, function(err, im){
+      im.convertGrayscale();
+      im.canny(5, 300);
+      im.houghLinesP();
+      im.save('./out.jpg');
       console.log('Wrote image');
     });
   }
 };
 
 var client = arDrone.createClient();
+var fp = new FeatureParser();
 client.config('video:video_channel', '1');
-
-var socket = net.connect({ host: '192.168.1.1', port: 5555}, function() {
-  console.log('Connected to drone');
-  var fp = new FeatureParser();
-  socket.pipe(parser).pipe(RGBA).pipe(fp);
-});
+// var socket = net.connect({ host: '192.168.1.1', port: 5555}, function() {
+//   console.log('Connected to drone');
+//   socket.pipe(parser).pipe(RGBA).pipe(fp);
+// });
+var pngStream = arDrone.createPngStream();
+pngStream.pipe(fp);
 
 // var pngStream = arDrone.createPngStream();
 // var lastPng;
