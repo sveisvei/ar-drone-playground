@@ -23,7 +23,7 @@ function clampHeading(heading) {
 
 // interpolates direction
 function ease(oldValue, newValue) {
-  return oldValue * 0 + newValue * 1;
+  return oldValue * 0.5 + newValue * 0.5;
 }
 
 function roundTwo(val) {
@@ -73,6 +73,7 @@ wss.on('connection', function(ws) {
   var lastDroneHeading = 0;
   var lastControllerHeading = 0;
   var headingDifference = 0;
+  var clientLoggingData = {};
 
   var udpControl = arDrone.createUdpControl();
   var client = arDrone.createClient({udpControl: udpControl});
@@ -82,13 +83,20 @@ wss.on('connection', function(ws) {
     if (navdata.magneto) {
       lastDroneHeading = ease(lastDroneHeading, normalizeHeading(roundTwo(navdata.magneto.heading.unwrapped)));
     }
-    console.log(navdata);
+    if (navdata.demo && navdata.demo.batteryPercentage) {
+      clientLoggingData.batteryPercentage = navdata.demo.batteryPercentage;
+    }
   });
 
   ws.on('close', function() {
     client.land();
     clearInterval(headingUpdateInterval);
+    clearInterval(clientLoggingInterval);
   });
+
+  var clientLoggingInterval = setInterval(function() {
+    logToClient(clientLoggingData);
+  }, 200);
 
   var headingUpdateInterval = setInterval(function() {
     // example: if lastControllerHeading is 45, and the calibrated difference is 15, we need the
@@ -97,7 +105,9 @@ wss.on('connection', function(ws) {
     // so if the calibration compensated controller heading is 60, and drone heading 50, then
     // 60 - 50 = 10, which indicates 10 degrees of clockwise movement.
     var degreesToTurn = roundTwo(clampHeading((lastControllerHeading + headingDifference) - lastDroneHeading));
-    logToClient({heading: lastDroneHeading, controllerHeading: lastControllerHeading, degreesToTurn: degreesToTurn});
+    clientLoggingData.heading = lastDroneHeading;
+    clientLoggingData.controllerHeading = lastControllerHeading;
+    clientLoggingData.degreesToTurn = degreesToTurn;
     if (!syncedOnce) return; // don't rotate unless we've synced once
     if (Math.abs(degreesToTurn) < 2) {
       client.clockwise(0);
