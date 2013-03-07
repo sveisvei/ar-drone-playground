@@ -78,9 +78,11 @@ wss.on('connection', function(ws) {
   var client = arDrone.createClient({udpControl: udpControl});
   client.config('general:navdata_demo', 'FALSE');
   client.on('navdata', function(navdata) {
-    if (navdata && navdata.magneto) {
+    if (!navdata) return;
+    if (navdata.magneto) {
       lastDroneHeading = ease(lastDroneHeading, normalizeHeading(roundTwo(navdata.magneto.heading.unwrapped)));
     }
+    console.log(navdata);
   });
 
   ws.on('close', function() {
