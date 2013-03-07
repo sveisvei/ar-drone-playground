@@ -4,6 +4,10 @@ var express = require('express')
   , path = require('path')
   , arDrone = require('ar-drone')
 
+process.on('uncaughtException', function(err) {
+  console.error(err);
+});
+
 // ensures heading angle between 0 and 360
 function normalizeHeading(heading) {
   heading = heading % 360;
@@ -70,16 +74,17 @@ wss.on('connection', function(ws) {
   var lastControllerHeading = 0;
   var headingDifference = 0;
 
-  // var client = arDrone.createClient();
-  // client.config('general:navdata_demo', 'FALSE');
-  // client.on('navdata', function(navdata) {
-  //   if (navdata && navdata.magneto) {
-  //     lastDroneHeading = ease(lastDroneHeading, normalizeHeading(roundTwo(navdata.magneto.heading.unwrapped)));
-  //   }
-  // });
+  var udpControl = arDrone.createUdpControl();
+  var client = arDrone.createClient({udpControl: udpControl});
+  client.config('general:navdata_demo', 'FALSE');
+  client.on('navdata', function(navdata) {
+    if (navdata && navdata.magneto) {
+      lastDroneHeading = ease(lastDroneHeading, normalizeHeading(roundTwo(navdata.magneto.heading.unwrapped)));
+    }
+  });
 
   ws.on('close', function() {
-    // client.land();
+    client.land();
     clearInterval(headingUpdateInterval);
   });
 
@@ -91,14 +96,14 @@ wss.on('connection', function(ws) {
     // 60 - 50 = 10, which indicates 10 degrees of clockwise movement.
     var degreesToTurn = roundTwo(clampHeading((lastControllerHeading + headingDifference) - lastDroneHeading));
     logToClient({heading: lastDroneHeading, controllerHeading: lastControllerHeading, degreesToTurn: degreesToTurn});
-    // if (!syncedOnce) return; // don't rotate unless we've synced once
-    // if (Math.abs(degreesToTurn) < 2) {
-    //   client.clockwise(0);
-    //   return;
-    // }
-    // var speed = Math.round(100 * Math.min(maxTurnSpeed, Math.max(minTurnSpeed, (Math.abs(diff) / maxTurnSpeedThreshold) * maxTurnSpeed))) / 100;
-    // if (diff > 0) client.clockwise(speed);
-    // else client.counterClockwise(speed);
+    if (!syncedOnce) return; // don't rotate unless we've synced once
+    if (Math.abs(degreesToTurn) < 2) {
+      client.clockwise(0);
+      return;
+    }
+    var speed = Math.round(100 * Math.min(maxTurnSpeed, Math.max(minTurnSpeed, (Math.abs(degreesToTurn) / maxTurnSpeedThreshold) * maxTurnSpeed))) / 100;
+    if (degreesToTurn > 0) client.clockwise(speed);
+    else client.counterClockwise(speed);
   }, turnIntervalFrequency);
 
   // handle client commands
@@ -107,37 +112,43 @@ wss.on('connection', function(ws) {
     if (data.type == 'orientation') {
       var heading = roundTwo(360 - data.alpha);
       lastControllerHeading = ease(lastControllerHeading, normalizeHeading(heading));
-      // if (data.beta < 0) {
-      //   var amount = -1*data.beta / 90;
-      //   client.back(0);
-      //   client.front(amount);
-      // }
-      // else if (data.beta >= 0) {
-      //   var amount = data.beta / 90;
-      //   client.front(0);
-      //   client.back(amount);
-      // }
-      // if (data.gamma < 0) {
-      //   var amount = -1*data.gamma / 90;
-      //   client.right(0);
-      //   client.left(amount);
-      // }
-      // else if (data.gamma >= 0) {
-      //   var amount = data.gamma / 90;
-      //   client.left(0);
-      //   client.right(amount);
-      // }
+      if (data.beta < 0) {
+        var amount = -1*data.beta / 90;
+        client.back(0);
+        client.front(amount);
+      }
+      else if (data.beta >= 0) {
+        var amount = data.beta / 90;
+        client.front(0);
+        client.back(amount);
+      }
+      if (data.gamma < 0) {
+        var amount = -1*data.gamma / 90;
+        client.right(0);
+        client.left(amount);
+      }
+      else if (data.gamma >= 0) {
+        var amount = data.gamma / 90;
+        client.left(0);
+        client.right(amount);
+      }
     }
     else if (data.type == 'takeoff') {
+      console.log('Takeoff');
       client.takeoff();
       client.clockwise(0);
       client.counterClockwise(0);
       syncedOnce = false;
     }
     else if (data.type == 'land') {
+      console.log('Land');
       client.land();
     }
-    else if (data.type == 'sync') {
+    else if (data.type == 'flat trim') {
+      console.log('Flat Trim');
+      udpControl.raw('FTRIM');
+    }
+    else if (data.type == 'calibrate') {
       // calculate heading difference. can range from -360 to 360.
       headingDifference = lastDroneHeading - lastControllerHeading;
       syncedOnce = true;
